@@ -22,17 +22,17 @@ var FS = require('fs');
 var http = require('http'); 
 var AUTH = 'XXXXXX';						//put the auth+live ID here for your bots acct
 var USERID = 'XXXXXX';						//put the bots user id here
-var ROOMID = '4e130f8d14169c1285007e79';	//put your turntable rooms id here
+var ROOMID = '4e130f8d14169c1285007e79';			//put your turntable rooms id here
 var MASTERID = 'XXXXXX';					//put your personal user id here
-var MASTERNAME = 'Kim Jung Chill';			//put your personal user name here
+var MASTERNAME = 'XXXXXX';					//put your personal user name here
 var CREATORID = 'XXXXXX';					//put your rooms creator ID here
-var CREATORNAME = 'jsides';					//put your rooms creator name here
-global.moderators = new Array();			// configJSON admin check
+var CREATORNAME = 'XXXXXX';					//put your rooms creator name here
+global.moderators = new Array();				//for use with configJSON admin check
 //TODO: pull this from configJSON
-var bot = new Bot(AUTH, USERID, ROOMID);	// load the bot
+var bot = new Bot(AUTH, USERID, ROOMID);			// load the bot
 var theUsersList = { };						//object to hold user list
 var theMODsList = { };						//object to hold mod list
-var shutUp = false;							//silent mode
+var shutUp = false;						//silent mode
 
 //functions
 //error writer
@@ -52,12 +52,12 @@ try {
 }
 
 //console messages for viewing room data in the console
-bot.on('roomChanged',  function (data) { console.log('The bot has changed room.', data); });
-bot.on('speak',        function (data) { console.log('Someone has spoken', data); });
+bot.on('roomChanged', function (data) { console.log('The bot has changed room.', data); });
+bot.on('speak', function (data) { console.log('Someone has spoken', data); });
 //bot.on('update_votes', function (data) { console.log('Someone has voted',  data); });
-bot.on('registered',   function (data) { console.log('Someone registered', data); });
-bot.on('add_DJ',   function (data) { console.log('DJ stepped up', data); });
-bot.on('rem_DJ',   function (data) { console.log('DJ stepped down', data); });
+bot.on('registered', function (data) { console.log('Someone registered', data); });
+bot.on('add_DJ', function (data) { console.log('DJ stepped up', data); });
+bot.on('rem_DJ', function (data) { console.log('DJ stepped down', data); });
 bot.on('new_moderator', function (data) { console.log('New Mod', data); });
 bot.on('rem_moderator', function (data) { console.log('Mod removed', data); });
 bot.on('newsong', function (data) { console.log('New song', data); });
@@ -66,7 +66,6 @@ bot.on('snagged', function (data) { console.log('A snag!', data); });
 console.log(__filename);
 
 bot.on('roomChanged', function (data) {
-
 	// Reset the users list
 	theUsersList = { };
 	
@@ -86,7 +85,6 @@ bot.on('roomChanged', function (data) {
 		theModList[user.userid] = mod;
 		console.log('added ' + mod + ' to theModList.');
 	}
-
 });
 			
 bot.on('registered', function (data) {
@@ -107,12 +105,12 @@ global.admincheck = function (userid) {
 	
 	for(i = 0; i < myString.length; i++){
 		console.log('Element ' + i + ' = ' + myString[i] + ' UserID = ' + userid);
-		
 		if (myString[i].toLowerCase() === userid) {
 			console.log(userid + ' matches a MODID!');
 			return true;
 		} else {
 			console.log('not a MODID, checking next userid');
+			return false;
 		}
 		console.log('we didn\'t find a match');		
 	}
@@ -177,7 +175,7 @@ bot.on('registered', function (data){
 		if (data.user[0].userid == USERID) {				//chillbot announces himself
 			bot.speak('Never fear Chillout Tent Denizens! I, ' +data.user[0].name+ ' your faithful chillbot, have arrived!')
 		} else if (data.user[0].userid == MASTERID) {		//if the master arrives announce him specifically
-			bot.speak('Dearest Subjects '+MASTERNAME+', your friendly neighborhood Dictator of Chill has arrived!') 
+			//bot.speak('Dearest Subjects '+MASTERNAME+', your friendly neighborhood Dictator of Chill has arrived!') 
 		} else if (data.user[0].userid == CREATORID) {		//if the master arrives announce him specifically
 			bot.speak('Tent denizens say hello to '+CREATORNAME+' - the Tents esteemed Creator! *golf clap*') 
 		} else {
@@ -188,7 +186,9 @@ bot.on('registered', function (data){
 	}
 });
 
-//auto bop. this is no longer allowed by turntable. it is here for informational purposes only. The writer of this software does not condone its use.
+// auto bop. this is no longer allowed by turntable. 
+// it is here for informational purposes only. The 
+// writer of this software does not condone its use.
 bot.on('newsong', function(data){
 	if (data.room.metadata.current_dj === MASTERID) {
 		console.log('bopping for Kim Jung Chill');
@@ -237,7 +237,6 @@ bot.on('add_dj', function (data){
 			bot.speak('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/');
 		}
 	}
-	
 });
 
 //thanks for DJ'ing
