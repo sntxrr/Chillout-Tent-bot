@@ -1,9 +1,28 @@
-{"botinfo":
-    {"auth":"auth+live+#####",
-    "userid":"#####",
-    "laptoptype":"chrome"},
- "roomid":"4e130f8d14169c1285007e79",
- "admins":
-    {"mainadmin":"4e19d4a2a3f7511323005128"
-     "admins": ["#####"] },
+{
+    "botinfo": {
+		"userid": "XXXXXX",
+        "name": "XXXXXX",
+		"roomid": "XXXXXX",
+		"auth": "XXXXXX",
+		"command_name": "XXXXXX",
+		"masterid": "XXXXXX",
+		"mastername": "XXXXXX",
+		"creatorid": "XXXXXX",
+		"creatorname": "XXXXXX"
+    },
+    "admins": [
+        "XXXXXX",
+        "XXXXXX",
+		"XXXXXX"
+    ],
+    "maintenance": {
+        "autorejoin": true,
+		"tweet": true
+    },
+	"twitter": {
+		"consumer_key": "XXXXXX", 
+		"consumer_secret": "XXXXXX", 
+		"access_token_key": "XXXXXX", 
+		"access_token_secret": "XXXXXX"
+	}
 }
