@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////// 
 // 
-// Chillout Tent Bot 
+// Chillout Tent Bot (aka. chillbot, @ChilloutTentBot)
 // 
 // Original created by: Michael Belardo http://GPlus.to/TerrorDactylDesigns
 //  
@@ -20,19 +20,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 var Bot = require('ttapi');
 var FS = require('fs');
 var http = require('http'); 
-var AUTH = 'XXXXXX';						//put the auth+live ID here for your bots acct
-var USERID = 'XXXXXX';						//put the bots user id here
-var ROOMID = '4e130f8d14169c1285007e79';			//put your turntable rooms id here
-var MASTERID = 'XXXXXX';					//put your personal user id here
-var MASTERNAME = 'XXXXXX';					//put your personal user name here
-var CREATORID = 'XXXXXX';					//put your rooms creator ID here
-var CREATORNAME = 'XXXXXX';					//put your rooms creator name here
-global.moderators = new Array();				//for use with configJSON admin check
-//TODO: pull this from configJSON
-var bot = new Bot(AUTH, USERID, ROOMID);			// load the bot
-var theUsersList = { };						//object to hold user list
-var theMODsList = { };						//object to hold mod list
-var shutUp = false;						//silent mode
+
+// use configJSON to do admin check
+global.moderators = new Array();
+//object to hold user list
+var theUsersList = { };
+//object to hold mod list
+var theMODsList = { };
+//silent mode variable in case you want the bot to just be quiet
+var shutUp = false;
 
 //functions
 //error writer
@@ -51,21 +47,25 @@ try {
 	process.exit(0);
 }
 
+// load the bot
+var bot = new Bot(configJSON.botinfo.auth, configJSON.botinfo.userid, configJSON.botinfo.roomid);
+
 //console messages for viewing room data in the console
-bot.on('roomChanged', function (data) { console.log('The bot has changed room.', data); });
-bot.on('speak', function (data) { console.log('Someone has spoken', data); });
+bot.on('roomChanged',  function (data) { console.log('The bot has changed room.', data); });
+bot.on('speak',        function (data) { console.log('Someone has spoken', data); });
 //bot.on('update_votes', function (data) { console.log('Someone has voted',  data); });
-bot.on('registered', function (data) { console.log('Someone registered', data); });
-bot.on('add_DJ', function (data) { console.log('DJ stepped up', data); });
-bot.on('rem_DJ', function (data) { console.log('DJ stepped down', data); });
+bot.on('registered',   function (data) { console.log('Someone registered', data); });
+//bot.on('add_DJ',   function (data) { console.log('DJ stepped up', data); });
+//bot.on('rem_DJ',   function (data) { console.log('DJ stepped down', data); });
 bot.on('new_moderator', function (data) { console.log('New Mod', data); });
 bot.on('rem_moderator', function (data) { console.log('Mod removed', data); });
 bot.on('newsong', function (data) { console.log('New song', data); });
-bot.on('snagged', function (data) { console.log('A snag!', data); });
+//bot.on('snagged', function (data) { console.log('A snag!', data); });
 //console message about File being executed
 console.log(__filename);
 
 bot.on('roomChanged', function (data) {
+
 	// Reset the users list
 	theUsersList = { };
 	
@@ -73,7 +73,6 @@ bot.on('roomChanged', function (data) {
 	for (var i=0; i<users.length; i++) {
 		var user = users[i];
 		theUsersList['b' + user.userid] = user;
-		console.log('added ' + user + ' to theUsersList. UserID: ' +user.userid+ '.');
 	}
 
 	// Reset the MODs list (in case we've removed or added one)
@@ -83,7 +82,6 @@ bot.on('roomChanged', function (data) {
 	for (var i=0; i<modsare.length; i++) {
 		var mod = modsare[i];
 		theModList[user.userid] = mod;
-		console.log('added ' + mod + ' to theModList.');
 	}
 });
 			
@@ -97,23 +95,23 @@ bot.on('deregistered', function (data) {
 	delete theUsersList['b' + user.userid];
 });
 
-//Checks if the user id is present in the admin list. Authentication
-//for admin-only privileges.
+//TODO: update configJSON when MOD added/removed
+
+// Checks if the user id is present in the admin list. 
+// Authentication for admin-only privileges.
 global.admincheck = function (userid) {
 	var myString = configJSON.admins;
 	myString.toString();
 	
 	for(i = 0; i < myString.length; i++){
-		console.log('Element ' + i + ' = ' + myString[i] + ' UserID = ' + userid);
 		if (myString[i].toLowerCase() === userid) {
-			console.log(userid + ' matches a MODID!');
+			//console.log(userid + ' matches a MODID!');
 			return true;
 		} else {
-			console.log('not a MODID, checking next userid');
-			return false;
+			//console.log('not a MODID, checking next userid');
 		}
-		console.log('we didn\'t find a match');		
 	}
+	return false;
 }
 
 //arrays for commands
@@ -172,12 +170,12 @@ bot.on('pmmed', function (data){
 //welcome new/special people
 bot.on('registered', function (data){ 
 	if (shutUp == false) {
-		if (data.user[0].userid == USERID) {				//chillbot announces himself
+		if (data.user[0].userid == configJSON.botinfo.userid) {				//chillbot announces himself
 			bot.speak('Never fear Chillout Tent Denizens! I, ' +data.user[0].name+ ' your faithful chillbot, have arrived!')
-		} else if (data.user[0].userid == MASTERID) {		//if the master arrives announce him specifically
-			//bot.speak('Dearest Subjects '+MASTERNAME+', your friendly neighborhood Dictator of Chill has arrived!') 
-		} else if (data.user[0].userid == CREATORID) {		//if the master arrives announce him specifically
-			bot.speak('Tent denizens say hello to '+CREATORNAME+' - the Tents esteemed Creator! *golf clap*') 
+		} else if (data.user[0].userid == configJSON.botinfo.masterid) {		//if the master arrives announce him specifically
+			bot.speak('Dearest Subjects '+configJSON.botinfo.mastername+', your friendly neighborhood Dictator of Chill has arrived!') 
+		} else if (data.user[0].userid == configJSON.botinfo.creatorid) {		//if the creator arrives announce him specifically
+			bot.speak('Tent denizens say hello to '+configJSON.botinfo.creatorname+' - the Tents esteemed Creator! *golf clap*') 
 		} else {
 			//TODO: once iPhone PM is sorted out, maybe this should be a PM to newly arrived people?
 			////bot.speak('Welcome '+data.user[0].name+'! Type /help to learn how to control me.'); //welcome the rest
@@ -186,14 +184,12 @@ bot.on('registered', function (data){
 	}
 });
 
-// auto bop. this is no longer allowed by turntable. 
-// it is here for informational purposes only. The 
-// writer of this software does not condone its use.
+//auto bop. this is no longer allowed by turntable. it is here for informational purposes only. The writer of this software does not condone its use.
 bot.on('newsong', function(data){
-	if (data.room.metadata.current_dj === MASTERID) {
+	if (data.room.metadata.current_dj === configJSON.botinfo.masterid) {
 		console.log('bopping for Kim Jung Chill');
 		bot.bop(); 
-	} else if (data.room.metadata.current_dj === CREATORID){
+	} else if (data.room.metadata.current_dj === configJSON.botinfo.creatorid){
 		console.log('bopping for jsides');
 		bot.bop(); 
 	} else if (admincheck(data.room.metadata.current_dj) === true) {
@@ -202,7 +198,7 @@ bot.on('newsong', function(data){
 	}
 });
 
-//	//if the bot was booted, reboot
+//	//TODO: if the bot was booted, reboot
 //	if((configJSON.botinfo.userid == data.userid) && config.maintenance.autorejoin) {
 //	setTimeout(function() {
 //		bot.roomRegister(config.botinfo.roomid);
@@ -221,28 +217,29 @@ bot.on('booted_user', function (data){
 //new DJ 
 bot.on('add_dj', function (data){ 
 	if (shutUp == false) {
-		if (data.user[0].userid == USERID) { //the bot will announce he is DJing
-			console.log('Chillbot told to DJ', data);
-		} else if (data.user[0].userid == MASTERID) { //the bot will announce you specially
+		if (data.user[0].userid == configJSON.botinfo.userid) { 
+			console.log('chillbot told to DJ', data);
+		} else if (data.user[0].userid == configJSON.botinfo.masterid) { 
 			console.log('MASTERID is taking the stage', data);
-			bot.speak('Dear Leader has taken the stage! '+MASTERNAME+' will now commence chillin\' you!'); 
-		} else if (data.user[0].userid == global.isMod) { //the bot will announce you specially
+			bot.speak('Dear Leader has taken the stage! '+configJSON.botinfo.mastername+' will now commence chillin\' you!'); 
+		} else if (admincheck(data.user[0].userid) === true) { 
 			console.log('A MOD is taking the stage', data);
 			bot.speak('A round of chillplause for one of our mods!'); 
 		} else {
 			console.log('New DJ - reminding of genre', data);
 			//TODO: account for iPhones lack of PM and fix PMs.
-			//bot.pm('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/',data.user[0].name);
+			//bot.speak('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/',data.user[0].name);
 			// @announce the new DJ a genre reminder in Chat
 			bot.speak('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/');
 		}
 	}
+	
 });
 
 //thanks for DJ'ing
 bot.on('rem_dj', function (data){ 
 	if (shutUp == false) {
-		if (data.user[0].userid == USERID) { 
+		if (data.user[0].userid == configJSON.botinfo.userid) { 
 		//do nothing. or write in something to have him say he has stepped down.
 		} else {
 		//bot.speak('Everyone give it up for '+data.user[0].name+'!'); //thanks the dj when they step off stage. note that if this is active the removed dj announcement will never happen.
@@ -260,16 +257,16 @@ bot.on('speak', function (data) {
 			//TODO: make this give MODs the FULL list
 			if (admincheck(data.userid) === true) {
 			// Give MODs the full BOT command list
-				bot.pm('My current command list is /hello, /chillbot, /help, /rules, /tasha, /lunch, /genre, /starve, /friday, /drink, /smoke, /warn, /rich, /props, /video, /google, /shutup, /speakup, /djmode, /getdown, /stepdown, /stepup, /skip, /good, /remove, /wave, /voodoo up, /kitten up, /alien up, /vampire up, /addsong, /deletesong, /phone up, /fruit up, /nix up, /chrome up. Questions? hit up KJC and remember to check for new updates!', data.userid);
+				bot.speak('My current MOD command list is maintained here: http://chillout-tent.wikispaces.com/Bot+Commands/hello - Questions or Suggestions? hit up KJC and remember to check for new updates!', data.userid);
 			} else {
 				//bot.speak('My current command list is /hello, /help, /rules, /video, /genre, /queue, /props, /warn, /chillbot. Plus a few hidden ones ;) remember to check for new updates!', data.userid);
 			}
 		}
 		if (data.text.match(/^\/chillbot$/)) {
-			bot.speak('Chill BOT v6.6.6 \n\r Coded by: Kim Jung Chill \n\r Acquire your own at https://github.com/rrxtns/Chillout-Tent-bot'); //note that line break and return does not appear in the web browser. However, it does appear on iPhone chat window.
+			bot.speak('Billy BOT v6.6.6 \n\r Coded by: Kim Jung Chill \n\r Acquire your own at https://github.com/rrxtns/Chillout-Tent-bot');
 		}
 		if (data.text.match(/^\/rules$/)) {
-			bot.speak('Its our room, and our rules..\n\r Suck it up cupcake. \n\r Your room moderators are: well, the best!'); //fill in with your information. line breaks and carriage returns will not display on the web browser but will on iPhone chat window.
+			bot.speak('Its our room, and our rules..\n\r Suck it up cupcake. \n\r Your room moderators are: well, the best!'); 
 		}
 		if (data.text.match(/^\/tasha$/)) {
 			bot.speak(':heart: FREE TASHA!  FREE TASHA!  FREE TASHA!  :heart:');
@@ -301,13 +298,13 @@ bot.on('speak', function (data) {
 		if (data.text.match(/^\/rich$/)) {
 			bot.speak("I don't think you realize how rich he really is. In fact, I should put on a monocle.  /monocle");
 		}
-		if ((data.text.match(/props/i)) && (data.userid != USERID)) {
+		if ((data.text.match(/props/i)) && (data.userid != configJSON.botinfo.userid)) {
 			var rndm = Math.floor(Math.random() * 10);
 			bot.speak(data.name + ' says ' + props[rndm]);	
 		}
 //		if (data.text.match(/^\/pm$'/)) {
 //			console.log('I was PM\'d', data);
-//			bot.pm('Hey there! Type "/help" for a list of commands.', data.userid);
+//			bot.speak('Hey there! Type "/help" for a list of commands.', data.userid);
 //		}	
 		if (data.text.match(/^\/dance$/)) {
 			console.log('got request to dance');
@@ -460,7 +457,6 @@ bot.on('speak', function (data) {
 		if (data.text.match(/wave/i)) {                     
 			bot.speak('Adios mi chill amigo!');	
 		}
-		
 		//Shuts down bot (only the main admin can run this)
 		//Disconnects from room, exits process.
 		if (data.text.match(/shutdown/i)) {
@@ -672,7 +668,6 @@ bot.on('speak', function (data) {
 
 //debug commands
 bot.on('speak', function (data) {
-   
    // Respond to "/debug" command //for adding test sections //not required
    if ((data.text.match(/^\/debug$/)) && (data.userid == MASTERID)) { 
       try {
@@ -682,13 +677,11 @@ bot.on('speak', function (data) {
         bot.speak(err.toString());
       }
    }
-
 });
 
 // Test stuff
 bot.on('speak', function (data) {
 	if (data.text.match(/^\/testing$/)) {
-      
 		try {
 		}
 		catch (err) {
@@ -697,22 +690,20 @@ bot.on('speak', function (data) {
 	}
 });   
 
-// Live tweeting //Code from - https://github.com/AvianFlu/ntwitter
-// by default this is commented out for people who dont care about Twitter
-// integration. Uncomment the below section, replace the parts with your 
-// own keys and URLs, delete the instructional comments out.
+console.log('configJSON.maintenance.tweet is set to: '+configJSON.maintenance.tweet+'.')
 
-var twitter = require('ntwitter'); 
-bot.on('newsong', function (data){ 
-	// Tweet the new song from the twitter apps account you created. Gives the song name, artist, and #turntablefm hashtag
+if (configJSON.maintenance.tweet === true) {
+	// Live tweeting code from - https://github.com/AvianFlu/ntwitter
+	var twitter = require('ntwitter'); 
+	bot.on('newsong', function (data){ 
 	var twit = new twitter({
-		consumer_key: 'XXXXXX', //add your consumer key
-		consumer_secret: 'XXXXXX', //add your consumer secret key
-		access_token_key: 'XXXXXX', //add your access token
-		access_token_secret: 'XXXXXX' //add your access token secret
-	});
+		consumer_key: configJSON.twitter.consumer_key,								//add your consumer key
+		consumer_secret: configJSON.twitter.consumer_secret,						//add your consumer secret key
+		access_token_key: configJSON.twitter.access_token_key,						//add your access token
+		access_token_secret: configJSON.access_token_secret							//add your access token secret
+		});
 	try {
-		bot.roomInfo(true, function(data) { //tweet on new song change event
+		bot.roomInfo(true, function(data) {										//tweet on new song change event
 			var currDJ = data.room.metadata.current_dj							//grabs the current DJ UserID
 			var currSong = data.room.metadata.current_song.metadata.song;		//grabs the current songs name
 			var currArtist = data.room.metadata.current_song.metadata.artist;	//grabs the current songs artist
@@ -729,5 +720,6 @@ bot.on('newsong', function (data){
 		});
 	} catch (err) {
 		bot.speak(err.toString());
-	}
-});
+		}
+	});
+};
