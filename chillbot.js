@@ -27,14 +27,30 @@ global.moderators = new Array();
 var theUsersList = { };
 //object to hold mod list
 var theMODsList = { };
+//object to Current DJ
+var theCurrDJsList = { };
 //silent mode variable in case you want the bot to just be quiet
 var shutUp = false;
 
-//functions
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTIONS
+//
+///////////////////////////////////////////////////////////////////////////////
+
 //error writer
 function errMsg(e) {
 	console.log(e);
 	bot.speak('Something went wrong. Tell master to check the fail logs.')
+}
+
+// TimeStamp for various things
+function timeStamp(varTimeDateStamp) {
+	var now = new Date();
+	var varTimeStamp = now.toLocaleTimeString();
+	var varDateStamp = now.toLocaleDateString();
+	var varTimeDateStamp = varDateStamp + ' ' + varTimeStamp;
+	return varTimeDateStamp;
 }
 
 //load the config.JSON file
@@ -43,7 +59,7 @@ try {
 } catch(e) {
 	//todo: update error handling
 	console.log(e);
-	console.log('Error loading configJSON.json. Check that your config file exists and is valid JSON.');
+	console.log(timeStamp() + ' Error loading configJSON.json. Check that your config file exists and is valid JSON.');
 	process.exit(0);
 }
 
@@ -51,16 +67,16 @@ try {
 var bot = new Bot(configJSON.botinfo.auth, configJSON.botinfo.userid, configJSON.botinfo.roomid);
 
 //console messages for viewing room data in the console
-bot.on('roomChanged',  function (data) { console.log('The bot has changed room.', data); });
-bot.on('speak',        function (data) { console.log('Someone has spoken', data); });
-//bot.on('update_votes', function (data) { console.log('Someone has voted',  data); });
-bot.on('registered',   function (data) { console.log('Someone registered', data); });
-//bot.on('add_DJ',   function (data) { console.log('DJ stepped up', data); });
-//bot.on('rem_DJ',   function (data) { console.log('DJ stepped down', data); });
-bot.on('new_moderator', function (data) { console.log('New Mod', data); });
-bot.on('rem_moderator', function (data) { console.log('Mod removed', data); });
-bot.on('newsong', function (data) { console.log('New song', data); });
-//bot.on('snagged', function (data) { console.log('A snag!', data); });
+bot.on('roomChanged',  function (data) { console.log(timeStamp() + ' The bot has changed room.', data); });
+bot.on('speak',        function (data) { console.log(timeStamp() + ' Someone has spoken', data); });
+//bot.on('update_votes', function (data) { console.log(timeStamp() + 'Someone has voted',  data); });
+bot.on('registered',   function (data) { console.log(timeStamp() + ' Someone registered', data); });
+bot.on('add_DJ',   function (data) { console.log(timeStamp() + ' DJ stepped up', data); });
+bot.on('rem_DJ',   function (data) { console.log(timeStamp() + ' DJ stepped down', data); });
+bot.on('new_moderator', function (data) { console.log(timeStamp() + ' New Mod', data); });
+bot.on('rem_moderator', function (data) { console.log(timeStamp() + ' Mod removed', data); });
+bot.on('newsong', function (data) { console.log(timeStamp() + ' New song', data); });
+//bot.on('snagged', function (data) { console.log(timeStamp() + 'A snag!', data); });
 //console message about File being executed
 console.log(__filename);
 
@@ -105,10 +121,10 @@ global.admincheck = function (userid) {
 	
 	for(i = 0; i < myString.length; i++){
 		if (myString[i].toLowerCase() === userid) {
-			//console.log(userid + ' matches a MODID!');
+			//console.log(timeStamp() + " " + userid + ' matches a MODID!');
 			return true;
 		} else {
-			//console.log('not a MODID, checking next userid');
+			//console.log(timeStamp() + ' not a MODID, checking next userid');
 		}
 	}
 	return false;
@@ -171,9 +187,9 @@ bot.on('pmmed', function (data){
 bot.on('registered', function (data){ 
 	if (shutUp == false) {
 		if (data.user[0].userid == configJSON.botinfo.userid) {				//chillbot announces himself
-			bot.speak('Never fear Chillout Tent Denizens! I, ' +data.user[0].name+ ' your faithful chillbot, have arrived!')
+			//bot.speak('Never fear Chillout Tent Denizens! I, ' +data.user[0].name+ ' your faithful chillbot, have arrived!')
 		} else if (data.user[0].userid == configJSON.botinfo.masterid) {		//if the master arrives announce him specifically
-			bot.speak('Dearest Subjects '+configJSON.botinfo.mastername+', your friendly neighborhood Dictator of Chill has arrived!') 
+			//bot.speak('Dearest Subjects '+configJSON.botinfo.mastername+', your friendly neighborhood Dictator of Chill has arrived!') 
 		} else if (data.user[0].userid == configJSON.botinfo.creatorid) {		//if the creator arrives announce him specifically
 			bot.speak('Tent denizens say hello to '+configJSON.botinfo.creatorname+' - the Tents esteemed Creator! *golf clap*') 
 		} else {
@@ -186,14 +202,35 @@ bot.on('registered', function (data){
 
 //auto bop. this is no longer allowed by turntable. it is here for informational purposes only. The writer of this software does not condone its use.
 bot.on('newsong', function(data){
+
+	console.log(timeStamp() + ' Current DJ count: '+data.room.metadata.djcount+'.');
+	console.log(timeStamp() + ' Current DJs: '+data.room.metadata.djs+'.');
+	console.log(timeStamp() + ' Current DJ ID: '+data.room.metadata.current_dj+'.');
+
+	// lets see if autodjing when DJ count is 1 or less works
+	if (data.room.metadata.djs == 1) {
+		console.log(timeStamp() + ' we only have one DJ on decks, stepping up');
+		bot.addDj(); 
+	}	else if (data.room.metadata.djs == 0) {
+		console.log(timeStamp() + ' we only have NO DJs on decks, stepping up');
+		bot.addDj(); 
+	}	else if (data.room.metadata.djs == 5) {
+		console.log(timeStamp() + ' we have 5 DJs on decks, stepping down');
+		bot.speak('Let me make some room...');
+		bot.remDj(configJSON.botinfo.userid); 
+	}
+
+	// do a little autoboppin' for MODs, Master and Creator
 	if (data.room.metadata.current_dj === configJSON.botinfo.masterid) {
-		console.log('bopping for Kim Jung Chill');
+		console.log(timeStamp() + ' bopping for my master');
 		bot.bop(); 
 	} else if (data.room.metadata.current_dj === configJSON.botinfo.creatorid){
-		console.log('bopping for jsides');
+		console.log(timeStamp() + ' bopping for Tent creator');
 		bot.bop(); 
+	} else if (data.room.metadata.current_dj === configJSON.botinfo.userid){
+		console.log(timeStamp() + ' oh look, I\'m djing!');
 	} else if (admincheck(data.room.metadata.current_dj) === true) {
-		console.log('bopping for MOD');
+		console.log(timeStamp() + ' bopping for MOD');
 		bot.bop(); 
 	}
 });
@@ -218,26 +255,25 @@ bot.on('booted_user', function (data){
 bot.on('add_dj', function (data){ 
 	if (shutUp == false) {
 		if (data.user[0].userid == configJSON.botinfo.userid) { 
-			console.log('chillbot told to DJ', data);
+			console.log(timeStamp() + ' chillbot told to DJ', data);
 		} else if (data.user[0].userid == configJSON.botinfo.masterid) { 
-			console.log('MASTERID is taking the stage', data);
-			bot.speak('Dear Leader has taken the stage! '+configJSON.botinfo.mastername+' will now commence chillin\' you!'); 
-		} else if (admincheck(data.user[0].userid) === true) { 
-			console.log('A MOD is taking the stage', data);
+			console.log(timeStamp() + ' MASTERID is taking the stage', data);
+			//bot.speak('Dear Leader has taken the stage! '+configJSON.botinfo.mastername+' will now commence chillin\' you!'); 
+		} else if (admincheck(data.user[0].userid) == true) { 
+			console.log(timeStamp() + ' A MOD is taking the stage', data);
 			bot.speak('A round of chillplause for one of our mods!'); 
 		} else {
-			console.log('New DJ - reminding of genre', data);
+			console.log(timeStamp() + ' New DJ - reminding of genre', data);
 			//TODO: account for iPhones lack of PM and fix PMs.
 			//bot.speak('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/',data.user[0].name);
 			// @announce the new DJ a genre reminder in Chat
 			bot.speak('Welcome @'+data.user[0].name+'! We Play Downtempo, NuJazz, electro-swing & Triphop. DJ queue list and *MUSICAL STYLE GUIDANCE HERE*: http://chillout-tent.wikispaces.com/');
 		}
 	}
-	
 });
 
 //thanks for DJ'ing
-bot.on('rem_dj', function (data){ 
+bot.on('rem_dj', function (data){
 	if (shutUp == false) {
 		if (data.user[0].userid == configJSON.botinfo.userid) { 
 		//do nothing. or write in something to have him say he has stepped down.
@@ -257,13 +293,13 @@ bot.on('speak', function (data) {
 			//TODO: make this give MODs the FULL list
 			if (admincheck(data.userid) === true) {
 			// Give MODs the full BOT command list
-				bot.speak('My current MOD command list is maintained here: http://chillout-tent.wikispaces.com/Bot+Commands/hello - Questions or Suggestions? hit up KJC and remember to check for new updates!', data.userid);
+				bot.pm('My current MOD command list is maintained here: http://chillout-tent.wikispaces.com/Bot+Commands/ - Questions or Suggestions? hit up KJC and remember to check for new updates!', data.userid);
 			} else {
 				//bot.speak('My current command list is /hello, /help, /rules, /video, /genre, /queue, /props, /warn, /chillbot. Plus a few hidden ones ;) remember to check for new updates!', data.userid);
 			}
 		}
 		if (data.text.match(/^\/chillbot$/)) {
-			bot.speak('Billy BOT v6.6.6 \n\r Coded by: Kim Jung Chill \n\r Acquire your own at https://github.com/rrxtns/Chillout-Tent-bot');
+			bot.speak('Chill BOT v6.6.6 \n\r Coded by: Kim Jung Chill \n\r Acquire your own at https://github.com/rrxtns/Chillout-Tent-bot');
 		}
 		if (data.text.match(/^\/rules$/)) {
 			bot.speak('Its our room, and our rules..\n\r Suck it up cupcake. \n\r Your room moderators are: well, the best!'); 
@@ -307,17 +343,17 @@ bot.on('speak', function (data) {
 //			bot.speak('Hey there! Type "/help" for a list of commands.', data.userid);
 //		}	
 		if (data.text.match(/^\/dance$/)) {
-			console.log('got request to dance');
+			console.log(timeStamp() + ' got request to dance');
 			bot.speak('Sorry, bot bopping is disabled until autobop rules for bots can be implemented');
 //			bot.bop();
 		}
 		if (data.text.match(/^\/bop$/)) {
-			console.log('got request to bop');
+			console.log(timeStamp() + ' got request to bop');
 			bot.speak('Sorry, bot bopping is disabled until autobop rules for bots can be implemented');
 //			bot.bop();
 		}
 		if (data.text.match(/^\/cheer$/)) {
-			console.log('got request to cheer');
+			console.log(timeStamp() + ' got request to cheer');
 			bot.speak('Sorry, bot bopping is disabled until autobop rules for bots can be implemented');
 			//bot.bop();
 		}
@@ -440,15 +476,15 @@ bot.on('speak', function (data) {
 			console.log('MOD told me to bop, boppin\'');
 			bot.bop();
 		}
-		//remove current_dj
-		if (data.text.match(/remove/i)) {
-			// this works, though it only removes the BOT MASTER
-			//bot.remDj(MASTERID);
-			bot.roomInfo(true, function(data) { 
-				var currDJ = data.room.metadata.current_dj;
-				bot.remDj(currDJ);
-			});
-		}
+//		//remove current_dj
+//		if (data.text.match(/remove/i)) {
+//			// this works, though it only removes the BOT MASTER
+//			//bot.remDj(MASTERID);
+//			bot.roomInfo(true, function(data) { 
+//				var currDJ = data.room.metadata.current_dj;
+//				bot.remDj(currDJ);
+//			});
+//		}
 		//boot NOT DONE YET
 		if (data.text.match(/boot/i)) {                     
 			//bot.bootUser(data.users.userID, 'Removed at Moderators request');	
@@ -460,7 +496,7 @@ bot.on('speak', function (data) {
 		//Shuts down bot (only the main admin can run this)
 		//Disconnects from room, exits process.
 		if (data.text.match(/shutdown/i)) {
-			console.log('Shutdown called: '+data.text);
+			console.log(timeStamp() + 'Shutdown called: '+data.text);
 			bot.speak('Shutting down...');
 			bot.roomDeregister();
 			process.exit(0);
@@ -565,7 +601,7 @@ bot.on('speak', function (data) {
 				var newSongName = songName = data.room.metadata.current_song.metadata.song;
 				bot.playlistAdd(newSong);
 				bot.speak('Added '+newSongName+' to my playlist.');
-				console.log('Added ' +newSongName+ ' to playlist');
+				console.log(timeStamp() + ' Added ' +newSongName+ ' to playlist');
 			  } catch (err) {
 				errMsg(err);
 			  }
@@ -579,7 +615,7 @@ bot.on('speak', function (data) {
 				var newSongName = songName = data.room.metadata.current_song.metadata.song;
 				bot.playlistRemove(newSong);
 				bot.speak('Removed '+newSongName+' from my playlist.');
-				console.log('Removed ' +newSongName+ ' from my playlist');
+				console.log(timeStamp() + ' Removed ' +newSongName+ ' from my playlist');
 			  } catch (err) {
 				errMsg(err);
 			  }
@@ -589,13 +625,13 @@ bot.on('speak', function (data) {
 		//set the bots laptop to an iPhone
 		if (data.text.match(/phone up/i)) {
 			bot.speak('iPhone mode ready master.');
-			console.log('iPhone mode ready.');
+			console.log(timeStamp() + ' iPhone mode ready.');
 			bot.modifyLaptop('iphone');
 		}
 		//set the bots laptop to a mac
 		if (data.text.match(/fruit up/i)) {
 			bot.speak('Apple mode ready master.');
-			console.log('Apple mode ready.');
+			console.log(timeStamp() + ' Apple mode ready.');
 			bot.modifyLaptop('mac');
 		}
 		//set the bots laptop to linux
@@ -606,7 +642,7 @@ bot.on('speak', function (data) {
 		}
 		//set the bots laptop to chromeOS
 		if (data.text.match(/chrome up/i)) {
-			bot.speak('Riding on chrome son.');
+			bot.speak(timeStamp() + ' Riding on chrome son.');
 			console.log('Chrome mode ready.');
 			bot.modifyLaptop('chrome');
 		}
@@ -690,7 +726,7 @@ bot.on('speak', function (data) {
 	}
 });   
 
-console.log('configJSON.maintenance.tweet is set to: '+configJSON.maintenance.tweet+'.')
+console.log(timeStamp() + ' configJSON.maintenance.tweet is set to: '+configJSON.maintenance.tweet+'.')
 
 if (configJSON.maintenance.tweet === true) {
 	// Live tweeting code from - https://github.com/AvianFlu/ntwitter
@@ -714,7 +750,7 @@ if (configJSON.maintenance.tweet === true) {
 			})
 			.updateStatus('The DJ ' + 'is chilling us w/ ' + currSong + ' - ' + currArtist + ' http://turntable.fm/chillout_tent5 #turntablefm #chillouttent', //replace the URL with your own rooms or delete.
 				function (err, data) {
-					console.log('Tweeted track change');
+					console.log(timeStamp() + ' Tweeted track change');
 				}
 			);
 		});
