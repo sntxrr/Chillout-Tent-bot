@@ -192,7 +192,7 @@ bot.on('registered', function (data){
 			//bot.speak('Dearest Subjects '+configJSON.botinfo.mastername+', your friendly neighborhood Dictator of Chill has arrived!') 
 		} else if (data.user[0].userid == configJSON.botinfo.creatorid) {		//if the creator arrives announce him specifically
 			bot.speak('Tent denizens say hello to '+configJSON.botinfo.creatorname+' - the Tents esteemed Creator! *golf clap*') 
-		} else {
+		} else if (!admincheck(data.user[0].userid)){
 			//TODO: once iPhone PM is sorted out, maybe this should be a PM to newly arrived people?
 			////bot.speak('Welcome '+data.user[0].name+'! Type /help to learn how to control me.'); //welcome the rest
 			bot.pm('Welcome to The Chillout Tent '+data.user[0].name+'! Type /genre to learn more about the musical style we play here. Happy chilling!', data.user[0].userid); //welcome the rest
