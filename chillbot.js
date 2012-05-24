@@ -220,18 +220,8 @@ bot.on('newsong', function(data){
 		bot.remDj(configJSON.botinfo.userid); 
 	}
 
-	// do a little autoboppin' for MODs, Master and Creator
-	if (data.room.metadata.current_dj === configJSON.botinfo.masterid) {
-		console.log(timeStamp() + ' bopping for my master');
-		bot.bop(); 
-	} else if (data.room.metadata.current_dj === configJSON.botinfo.creatorid){
-		console.log(timeStamp() + ' bopping for Tent creator');
-		bot.bop(); 
-	} else if (data.room.metadata.current_dj === configJSON.botinfo.userid){
+	if (data.room.metadata.current_dj === configJSON.botinfo.userid) {
 		console.log(timeStamp() + ' oh look, I\'m djing!');
-	} else if (admincheck(data.room.metadata.current_dj) === true) {
-		console.log(timeStamp() + ' bopping for MOD');
-		bot.bop(); 
 	}
 });
 
